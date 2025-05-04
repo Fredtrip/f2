@@ -42,5 +42,6 @@
 - 目標網站連結：[網站名稱](http://target-website.com)
 
 ## 作者與聯絡方式
-- **作者**: Your Name
-- **聯絡方式**: your.email@example.com
+- **作者**: 蔡明訓
+- **聯絡方式**: mingxun1060520@gmail.com
+
