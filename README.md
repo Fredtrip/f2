@@ -36,7 +36,7 @@
 以下是爬蟲抓取的資料截圖以及目標網站的連結。
 
 ### 資料截圖
-![爬取資料截圖](blob:https://onedrive.live.com/002ad9bd-42e9-491c-8230-2aaf7557374f)
+![爬取資料截圖](https://raw.githubusercontent.com/Fredtrip/f2/refs/heads/main/0504.png)
 
 ### 目標網站
 - 目標網站連結：[網站名稱](https://data.taipei/)
