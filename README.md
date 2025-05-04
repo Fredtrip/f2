@@ -36,7 +36,7 @@
 以下是爬蟲抓取的資料截圖以及目標網站的連結。
 
 ### 資料截圖
-![爬取資料截圖](blob:https://onedrive.live.com/c5da6f1c-d8f6-458d-8b12-4f5447c67b5b)
+![爬取資料截圖](https://onedrive.live.com/c5da6f1c-d8f6-458d-8b12-4f5447c67b5b)
 
 ### 目標網站
 - 目標網站連結：[網站名稱](https://data.taipei/)
