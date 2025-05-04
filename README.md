@@ -39,7 +39,7 @@
 ![爬取資料截圖](https://raw.githubusercontent.com/Fredtrip/f2/refs/heads/main/0504.png)
 
 ### 目標網站
-- 目標網站連結：[網站名稱](https://data.taipei/)
+- 目標網站連結：[臺北市資料大平臺](https://data.taipei/)
 
 ## 作者與聯絡方式
 - **作者**: 蔡明訓
