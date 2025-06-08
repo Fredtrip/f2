@@ -97,15 +97,213 @@
                 								<h3>Python 爬蟲程式</h3>
                 								<p>使用 Beautiful Soup 和 Requests 函式庫開發的網頁爬蟲，能夠自動收集和整理網站資料。</p>
                						 <div class="code-snippet">
-						import requests
-						from bs4 import BeautifulSoup
+							<code>#pip install selenium webdriver_manager pandas requests
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+import time
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.common.exceptions import NoSuchElementException, ElementNotInteractableException
+import pandas as pd
+import re
 
-						def scrape_data(url):
-   						 	response = requests.get(url)
-   						 	soup = BeautifulSoup(response.text, 'html.parser')
-    							return soup.find_all('div', class_='content')
+#%% 範例：爬取PTT八卦版熱門文章
+# 定義抓取一頁文章資料的函數
+def extract_ptt_data():
+    time.sleep(2)
+    articles = driver.find_elements(By.CSS_SELECTOR, ".r-ent")
+    
+    for article in articles:
+        try:
+            # 獲取推文數
+            push_element = article.find_element(By.CSS_SELECTOR, ".nrec")
+            push_count = push_element.text.strip() if push_element.text else "0"
+            
+            # 獲取文章標題和連結
+            title_element = article.find_element(By.CSS_SELECTOR, ".title a")
+            title = title_element.text.strip()
+            link = "https://www.ptt.cc" + title_element.get_attribute("href")
+            
+            # 獲取作者
+            author_element = article.find_element(By.CSS_SELECTOR, ".author")
+            author = author_element.text.strip()
+            
+            # 獲取日期
+            date_element = article.find_element(By.CSS_SELECTOR, ".date")
+            date = date_element.text.strip()
+            
+            # 分類文章類型
+            category = "其他"
+            if "[問卦]" in title:
+                category = "問卦"
+            elif "[新聞]" in title:
+                category = "新聞"
+            elif "[討論]" in title:
+                category = "討論"
+            elif "[爆卦]" in title:
+                category = "爆卦"
+            
+            # 判斷是否為熱門文章（推文數大於10或標示為爆）
+            is_hot = push_count == "爆" or (push_count.isdigit() and int(push_count) >= 10)
+            
+            ptt_data.append({
+                "標題": title,
+                "連結": link,
+                "作者": author,
+                "日期": date,
+                "推文數": push_count,
+                "分類": category,
+                "熱門": is_hot
+            })
+            
+            print(f"推文數: {push_count} | 標題: {title[:50]}...")
+            
+        except Exception as e:
+            print(f"處理文章時發生錯誤: {e}")
+            continue
+
+#%% 設定瀏覽器選項
+options = webdriver.ChromeOptions()
+options.add_argument("--disable-blink-features=AutomationControlled")
+options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+options.add_argument("--disable-images")  # 加快載入速度
+
+# 啟動瀏覽器
+driver = webdriver.Chrome(
+    service=webdriver.chrome.service.Service(ChromeDriverManager().install()),
+    options=options
+)
+
+try:
+    # 前往PTT八卦版
+    driver.get("https://www.ptt.cc/bbs/Gossiping/index.html")
+    
+    # 處理18歲警告頁面
+    try:
+        time.sleep(2)
+        age_button = driver.find_element(By.CSS_SELECTOR, ".btn-big")
+        age_button.click()
+        time.sleep(2)
+    except:
+        print("未遇到年齡警告頁面，直接進入")
+    
+    driver.maximize_window()
+    
+    # 存放所有文章資料的列表
+    ptt_data = []
+    
+    # 爬取多頁文章
+    page_count = 0
+    max_pages = 5  # 限制爬取頁數
+    
+    while page_count < max_pages:
+        print(f"\n=== 正在爬取第 {page_count + 1} 頁 ===")
+        extract_ptt_data()
+        
+        try:
+            # 尋找上一頁按鈕（PTT是往前翻頁）
+            prev_button = driver.find_element(By.CSS_SELECTOR, ".btn-group-paging a:nth-child(2)")
+            if prev_button and "‹ 上頁" in prev_button.text:
+                prev_button.click()
+                time.sleep(2)
+            else:
+                print("找不到上一頁按鈕")
+                break
+                
+        except (NoSuchElementException, ElementNotInteractableException) as e:
+            print(f"翻頁時發生錯誤: {e}")
+            break
+            
+        page_count += 1
+
+finally:
+    driver.quit()
+
+#%% 將資料轉換為DataFrame並進行分析
+if ptt_data:
+    df = pd.DataFrame(ptt_data)
+    print(f"\n總共爬取了 {len(ptt_data)} 篇文章")
+    
+    # 基本統計
+    print(f"\n=== 基本統計 ===")
+    print(f"總文章數: {len(df)}")
+    print(f"熱門文章數: {len(df[df['熱門'] == True])}")
+    print(f"平均標題長度: {df['標題'].str.len().mean():.1f} 字")
+    
+    # 分類統計
+    print(f"\n=== 文章分類統計 ===")
+    category_stats = df['分類'].value_counts()
+    for category, count in category_stats.items():
+        print(f"{category}: {count} 篇")
+    
+    # 熱門文章分析
+    hot_articles = df[df['熱門'] == True].copy()
+    if not hot_articles.empty:
+        print(f"\n=== 熱門文章 TOP 10 ===")
+        # 將推文數轉換為數字進行排序
+        def convert_push_count(push_count):
+            if push_count == "爆":
+                return 100
+            elif push_count.isdigit():
+                return int(push_count)
+            else:
+                return 0
+        
+        hot_articles['推文數_數字'] = hot_articles['推文數'].apply(convert_push_count)
+        hot_articles_sorted = hot_articles.sort_values('推文數_數字', ascending=False)
+        
+        for i, row in hot_articles_sorted.head(10).iterrows():
+            print(f"{row['推文數']:>3} | {row['標題'][:60]}")
+    
+    # 儲存資料
+    df.to_csv("ptt_gossiping_articles.csv", index=False, encoding='utf-8-sig')
+    print(f"\n資料已儲存至 ptt_gossiping_articles.csv")
+    
+    # 熱門關鍵字分析
+    print(f"\n=== 熱門關鍵字分析 ===")
+    all_titles = ' '.join(df['標題'].tolist())
+    
+    # 常見關鍵字
+    common_keywords = ['台灣', '政府', '中國', '美國', '疫情', '經濟', '選舉', 
+                      '房價', '薪水', '工作', '學校', '醫院', '警察', '法院']
+    
+    keyword_count = {}
+    for keyword in common_keywords:
+        count = all_titles.count(keyword)
+        if count > 0:
+            keyword_count[keyword] = count
+    
+    if keyword_count:
+        sorted_keywords = sorted(keyword_count.items(), key=lambda x: x[1], reverse=True)
+        for keyword, count in sorted_keywords[:10]:
+            print(f"{keyword}: {count} 次")
+    
+    # 作者活躍度分析
+    print(f"\n=== 活躍作者 TOP 5 ===")
+    author_stats = df['作者'].value_counts().head(5)
+    for author, count in author_stats.items():
+        print(f"{author}: {count} 篇文章")
+
+else:
+    print("未能爬取到任何資料")
+
+#%% 進階分析：時間趨勢
+def analyze_time_trends(df):
+    """分析發文時間趨勢"""
+    if df.empty:
+        return
+    
+    print(f"\n=== 發文日期分布 ===")
+    date_stats = df['日期'].value_counts().sort_index()
+    for date, count in date_stats.items():
+        print(f"{date}: {count} 篇")
+
+# 執行時間趨勢分析
+if ptt_data:
+    analyze_time_trends(df)</code>
                 			</div>
-                				<button class="view-code-btn" onclick="alert('查看完整程式碼')">查看完整程式碼</button>
+                				<p></p>
             				</div>
 							<ul class="actions">
 								<li><a href="generic.html" class="button">Learn more</a></li>
